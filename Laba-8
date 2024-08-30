@@ -1,0 +1,88 @@
+Требуется написать объектно-ориентированную программу с графическим интерфейсом в соответствии со своим вариантом. 
+В программе должны быть реализованы минимум один класс, три атрибута, четыре метода (функции). 
+Ввод данных из файла с контролем правильности ввода. При необходимости сохранять информацию в виде файлов, разделяя значения запятыми или пробелами. 
+Для GUI использовать библиотеку tkinter.
+Объекты – договоры на тех. обслуживание станков
+Функции: сегментация полного списка договоров по видам станков, визуализация предыдущей функции в форме круговой диаграммы, 
+сегментация полного списка договоров по заказчикам, визуализация предыдущей функции в форме круговой диаграммы/
+
+import tkinter as tk
+from tkinter import filedialog, messagebox
+import matplotlib.pyplot as plt
+from collections import Counter
+import csv
+import os
+
+class Contract:
+    def __init__(self, machine_type, customer, contract_date):
+        self.machine_type = machine_type
+        self.customer = customer
+        self.contract_date = contract_date
+
+class ContractManager:
+    def __init__(self, master):
+        self.master = master
+        self.master.title("Управление договорами на тех. обслуживание")
+        
+        self.contracts = []
+
+        self.load_button = tk.Button(master, text="Загрузить данные из файла", command=self.load_data)
+        self.load_button.pack(pady=10)
+
+        self.segment_by_machine_type_button = tk.Button(master, text="Сегментация по видам станков", command=self.segment_by_machine_type)
+        self.segment_by_machine_type_button.pack(pady=10)
+
+        self.segment_by_customer_button = tk.Button(master, text="Сегментация по заказчикам", command=self.segment_by_customer)
+        self.segment_by_customer_button.pack(pady=10)
+
+    def load_data(self):
+        file_path = filedialog.askopenfilename(filetypes=[("CSV Files", "*.csv")])
+        if not file_path:
+            return
+        
+        if not os.path.exists(file_path):
+            messagebox.showerror("Ошибка", "Файл не найден!")
+            return
+
+        try:
+            with open(file_path, newline='', encoding="UTF-8") as csvfile:
+                reader = csv.reader(csvfile)
+                self.contracts = []
+                for row in reader:
+                    if len(row) != 3:
+                        raise ValueError("Неверное количество значений в строке.")
+                    machine_type, customer, contract_date = row
+                    self.contracts.append(Contract(machine_type, customer, contract_date))
+                messagebox.showinfo("Успех", "Данные успешно загружены.")
+        except Exception as e:
+            messagebox.showerror("Ошибка", f"Ошибка при загрузке данных: {e}")
+
+    def segment_by_machine_type(self):
+        if not self.contracts:
+            messagebox.showwarning("Предупреждение", "Сначала загрузите данные.")
+            return
+
+        machine_types = [contract.machine_type for contract in self.contracts]
+        self.visualize_data(Counter(machine_types), "По видам станков")
+
+    def segment_by_customer(self):
+        if not self.contracts:
+            messagebox.showwarning("Предупреждение", "Сначала загрузите данные.")
+            return
+
+        customers = [contract.customer for contract in self.contracts]
+        self.visualize_data(Counter(customers), "По заказчикам")
+
+    def visualize_data(self, data_counter, title):
+        labels = data_counter.keys()
+        sizes = data_counter.values()
+        plt.figure(figsize=(8, 6))
+        plt.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=90)
+        plt.axis('equal')  # Чтобы круг был кругом
+        plt.title(title)
+        plt.show()
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = ContractManager(root)
+    root.mainloop()
